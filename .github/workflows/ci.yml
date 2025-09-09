@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, '3.10', '3.11']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8 black
+
+    - name: Check Python syntax
+      run: |
+        python -m py_compile *.py
+
+    - name: Run basic functionality test
+      run: |
+        python -c "
+        import sys
+        sys.path.append('.')
+        
+        # Test basic imports
+        try:
+            from CartoonGenerator import CartoonGenerator
+            from TextGenerator import TextGenerator
+            from ImageAnalyzer import ImageAnalyzer
+            from CodeAssistant import CodeAssistant
+            print('✓ All modules import successfully')
+        except Exception as e:
+            print(f'✗ Import error: {e}')
+            sys.exit(1)
+        
+        # Test basic instantiation with dummy API keys
+        try:
+            cg = CartoonGenerator(api_key='test-key')
+            tg = TextGenerator(api_key='test-key')
+            ia = ImageAnalyzer(api_key='test-key')
+            ca = CodeAssistant(api_key='test-key')
+            print('✓ All classes instantiate successfully')
+        except Exception as e:
+            print(f'✗ Instantiation error: {e}')
+            sys.exit(1)
+        "
+
+    - name: Test examples script syntax
+      run: |
+        python -m py_compile examples.py
+
+    - name: Create test output directory
+      run: mkdir -p test_output
+
+    - name: Basic integration test
+      run: |
+        python -c "
+        import os
+        import sys
+        sys.path.append('.')
+        
+        # Create a simple test to verify the modules work without API calls
+        from CartoonGenerator import CartoonGenerator
+        from TextGenerator import TextGenerator
+        from ImageAnalyzer import ImageAnalyzer
+        from CodeAssistant import CodeAssistant
+        
+        try:
+            # Test with dummy API keys since they're required
+            cg = CartoonGenerator(api_key='test-key')
+            tg = TextGenerator(api_key='test-key')
+            ia = ImageAnalyzer(api_key='test-key')
+            ca = CodeAssistant(api_key='test-key')
+            
+            # Test basic properties/methods that don't require API calls
+            assert hasattr(cg, 'supported_formats')
+            assert hasattr(cg, 'style_presets')
+            print('✓ All classes instantiate and have expected attributes')
+        except Exception as e:
+            print(f'✗ Integration test failed: {e}')
+            sys.exit(1)
+        "
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Build package
+      run: |
+        # Create a basic setup.py for building if it doesn't exist
+        if [ ! -f setup.py ]; then
+          cat > setup.py << 'EOF'
+        from setuptools import setup, find_packages
+        
+        with open("README.md", "r", encoding="utf-8") as fh:
+            long_description = fh.read()
+        
+        with open("requirements.txt", "r", encoding="utf-8") as fh:
+            requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+        
+        setup(
+            name="ai-driven-python-code",
+            version="0.1.0",
+            author="GizzZmo",
+            description="AI-powered Python tools for cartoon generation, text processing, image analysis, and code assistance",
+            long_description=long_description,
+            long_description_content_type="text/markdown",
+            url="https://github.com/GizzZmo/AI-driven-Python-code",
+            py_modules=["CartoonGenerator", "TextGenerator", "ImageAnalyzer", "CodeAssistant", "examples"],
+            classifiers=[
+                "Development Status :: 3 - Alpha",
+                "Intended Audience :: Developers",
+                "License :: OSI Approved :: MIT License",
+                "Operating System :: OS Independent",
+                "Programming Language :: Python :: 3",
+                "Programming Language :: Python :: 3.8",
+                "Programming Language :: Python :: 3.9",
+                "Programming Language :: Python :: 3.10",
+                "Programming Language :: Python :: 3.11",
+            ],
+            python_requires=">=3.8",
+            install_requires=requirements,
+        )
+        EOF
+        fi
+        
+        python -m build
+
+    - name: Check build artifacts
+      run: |
+        ls -la dist/
+        python -m twine check dist/*

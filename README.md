@@ -344,6 +344,30 @@ The `examples.py` script demonstrates:
 
 Run `python examples.py` to see all features in action!
 
+## 🔧 CI/CD & Automation
+
+This repository includes a comprehensive GitHub Actions workflow system:
+
+### Available Workflows
+- **CI**: Continuous integration testing across Python 3.8-3.11
+- **Code Quality**: Automated linting, formatting, and style checks
+- **Security & Dependencies**: Vulnerability scanning and dependency management
+- **Release**: Automated package building and publishing
+- **Dependencies**: Monthly automated dependency updates
+
+### Workflow Features
+- ✅ **Multi-Python testing** (3.8, 3.9, 3.10, 3.11)
+- ✅ **Code quality enforcement** (Black, Flake8, isort, Pylint)
+- ✅ **Security scanning** (Bandit, Safety, Semgrep, CodeQL)
+- ✅ **Automated releases** with PyPI publishing
+- ✅ **Docker container support**
+- ✅ **Dependency vulnerability tracking**
+
+### Manual Triggers
+- Trigger dependency updates: `workflow_dispatch` on Dependencies workflow
+- Force security scan: `workflow_dispatch` on Security workflow
+- Create release: Push a tag like `v1.0.0`
+
 ## 📞 Support
 
 For questions, issues, or feature requests:
