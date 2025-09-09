@@ -266,19 +266,22 @@ class ImageAnalyzer:
         fig, axes = plt.subplots(rows, cols, figsize=(4*cols, 4*rows))
         if total_images == 1:
             axes = [axes]
-        elif rows == 1:
+        elif rows == 1 and cols == 1:
             axes = [axes]
+        elif rows == 1:
+            # axes is already an array when rows=1 and cols>1
+            pass
         else:
             axes = axes.flatten()
             
         # Add original image
-        axes[0].imshow(original_image)
+        axes[0].imshow(np.array(original_image))
         axes[0].set_title("Original", fontsize=12, fontweight='bold')
         axes[0].axis('off')
         
         # Add processed images
         for i, (processed_img, label) in enumerate(zip(processed_images, labels)):
-            axes[i+1].imshow(processed_img)
+            axes[i+1].imshow(np.array(processed_img))
             axes[i+1].set_title(label, fontsize=12)
             axes[i+1].axis('off')
             
