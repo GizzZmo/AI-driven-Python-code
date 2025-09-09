@@ -150,9 +150,14 @@ class CartoonGenerator:
                 if apply_filters:
                     image = self._apply_style_filters(image, cartoon_data.get("style", "classic"))
                 
-                # Save front and back sides
-                front_side = image.crop((0, 0, image.width//2, image.height))
-                back_side = image.crop((image.width//2, 0, image.width, image.height))
+                # Save front and back sides - handle small images safely
+                if image.width < 2:
+                    # For very small images, duplicate the image instead of cropping
+                    front_side = image.copy()
+                    back_side = image.copy()
+                else:
+                    front_side = image.crop((0, 0, image.width//2, image.height))
+                    back_side = image.crop((image.width//2, 0, image.width, image.height))
                 
                 # Save main images
                 front_path = f"{output_dir}/page_{i+1}_front.{format.lower()}"
@@ -246,8 +251,11 @@ class CartoonGenerator:
             image_data = base64.b64decode(page["image"])
             image = Image.open(io.BytesIO(image_data))
             
-            # Use front side for animation
-            front_side = image.crop((0, 0, image.width//2, image.height))
+            # Use front side for animation - handle small images safely
+            if image.width < 2:
+                front_side = image.copy()
+            else:
+                front_side = image.crop((0, 0, image.width//2, image.height))
             frames.append(front_side)
             
         if frames:
